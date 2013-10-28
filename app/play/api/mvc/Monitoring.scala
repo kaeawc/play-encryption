@@ -72,7 +72,6 @@ trait Monitoring {
 
   /**
    * Gets a client visit visit
-   * @type {[type]}
    */
   implicit def getVisit(implicit request: Request[AnyContent]):Future[Visit] =
     visit[AnyContent] map {
@@ -82,7 +81,6 @@ trait Monitoring {
 
   /**
    * Attempts to parse the request implicitly for a client UserView
-   * @type {[type]}
    */
   implicit def visit[A](implicit request: Request[A]):Future[Option[Visit]] =
     Visit.create(request)
