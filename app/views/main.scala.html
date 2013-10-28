@@ -1,0 +1,12 @@
+@(page:String,user:Option[User] = None)(content:Html)
+
+<!DOCTYPE html>
+<html>
+  @head()
+  <body>
+    @navigation(page,user)
+    @content
+    @forkMe()
+    @scripts()
+  </body>
+</html>

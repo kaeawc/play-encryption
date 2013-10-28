@@ -1,0 +1,15 @@
+@(registration: Form[Registration],user:Option[User] = None)
+
+@main("register",user) {
+  <div class="container">This is a registration form.</div>
+  <div class="container">
+
+    @helper.form(action = controllers.auth.routes.Register.submit()) {
+      @helper.inputText(registration("email"))
+      @helper.inputText(registration("password"))
+      @helper.inputText(registration("retypedPassword"))
+      <input type="submit" value="Submit" />
+    }
+
+  </div>
+}
