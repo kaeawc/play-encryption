@@ -5,6 +5,7 @@ import org.specs2.mutable._
 import org.specs2.runner._
 import org.junit.runner._
 
+import play.api.libs.Crypto
 import play.api.Logger
 import play.api.test._
 import play.api.mvc._
@@ -47,8 +48,7 @@ package object auth extends Specification {
     cookie must beSome
     implicit val salt:Array[Byte] = Configuration.appSalt
 
-    implicit val cipher = crypto.gcm.AES.cipher
-    val session = crypto.gcm.AES.decrypt(cookie.get.value)
+    val session = Crypto.decryptAES(cookie.get.value)
 
     UserSession.parse(session) flatMap {
       case Some(token:UserSession) => User.getById(token.user)
@@ -79,10 +79,11 @@ package object auth extends Specification {
     val response = route(header,data).get
 
     status(response) must equalTo(201)
-    contentType(response) must beSome("application/json")
+    contentType(response) must beSome("text/plain")
+    contentAsString(response) mustEqual "User Created"
 
-    User.parse(contentAsString(response)) match {
-      case user:User => {
+    User.getByEmail(email) map {
+      case Some(user:User) => {
         user.email mustEqual email
 
         val salt = stringToBytes(user.salt)

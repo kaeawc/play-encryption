@@ -26,21 +26,11 @@ class ApplicationSpec extends Specification {
     }
   }
 
-  "GET /home" should {
+  "GET /about" should {
 
-    "return Unauthorized without a valid user cookie" in new WithApp {
+    "render the about page" in new WithApp {
 
-      val request = FakeRequest(GET, "/home")
-
-      val response = route(request).get
-
-      status(response) must equalTo(401)
-    }
-
-    "render the user home page with a valid user cookie" in new WithApp {
-
-      val request = FakeRequest(GET, "/home")
-        .withCookies(authorizedCookie(Email.random(),Random.string(10)))
+      val request = FakeRequest(GET, "/about")
 
       val response = route(request).get
 
