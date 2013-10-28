@@ -1,0 +1,16 @@
+
+GET     /                           controllers.Application.landing
+GET     /about                      controllers.Application.about
+
+
+GET     /home                       controllers.Dashboard.home
+
+
+GET     /registration               controllers.auth.Register.getForm
+GET     /login                      controllers.auth.Login.getForm
+
+POST    /register                   controllers.auth.Register.submit
+POST    /login                      controllers.auth.Login.submit
+GET     /logout                     controllers.auth.Logout.submit
+
+GET     /*file               controllers.Assets.at(path="/public", file)
