@@ -52,6 +52,8 @@ object Visit extends ((
 
     val userAgent = request.headers.get("User-Agent")
 
+    
+
     getUserFromCookie(request) map {
       user =>
       val userId = user match {

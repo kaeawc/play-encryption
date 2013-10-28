@@ -28,9 +28,12 @@ with CookieManagement {
 
   def submit = FormAsync(loginForm) {
     login:LoginCredentials =>
-    
+
     User.authenticate(login) flatMap {
       case Some(user:User) => {
+
+        Logger.info("User authenticated")
+
         createUserCookie(user) map {
           case Some(cookie:Cookie) =>
             Redirect(controllers.routes.Dashboard.home).withCookies(cookie)

@@ -37,7 +37,7 @@ with FormBinding {
 
     User.create(registration) map {
       case Some(user:User) =>
-        Created(Json.toJson(user))
+        Created("User Created")
       case _ =>
         NotFound
     }

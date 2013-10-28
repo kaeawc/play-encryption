@@ -108,12 +108,12 @@ with Authentication[User] {
 
   def create(registration:Registration) = {
 
-    val email            = registration.email
-    val password         = registration.password
-    val salt             = createSalt()
-    val created          = new Date()
-    val hashedPassword   = useSalt(password,salt)
-    val storedSalt       = new String(salt.map(_.toChar))
+    val email             = registration.email
+    val password          = stringToBytes(registration.password)
+    val salt              = createSalt()
+    val created           = new Date()
+    val hashedPassword    = useSalt(password,salt)
+    val storedSalt:String = salt
 
     getByEmail(email) map {
       case Some(user:User) => {
@@ -164,7 +164,13 @@ with Authentication[User] {
   def authenticate(login:LoginCredentials) =
     getByEmail(login.email) map {
       case Some(user:User) => {
-        if (user.password == useSalt(login.password,user.salt))
+
+        val password       = stringToBytes(login.password)
+        val salt           = hex2bytes(user.salt)
+        val hashedPassword = bytes2hex(useSalt(password,salt))
+        val correctHash    = bytes2hex(user.password)
+
+        if (correctHash == hashedPassword)
           Some(user)
         else
           None
