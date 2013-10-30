@@ -17,6 +17,19 @@ trait FormBinding extends Monitoring {
     implicit request => BindAsync(form)(success)
   }
 
+  def badFormAsJson[Tuple](form:Form[Tuple]) = Future {
+    bad(form.errors.map {
+      error =>
+      error.key -> error.message
+    })
+  }
+
+  def badForm[Tuple](form:Form[Tuple]) = Future {
+    bad(form.errors.map {
+      error =>
+      error.key -> error.message
+    })
+  }
 
   def BindAsync[Tuple](
     form    : Form[Tuple]
@@ -24,11 +37,7 @@ trait FormBinding extends Monitoring {
     success : Tuple => Future[SimpleResult]
   )(implicit request:Request[AnyContent]) = {
     form.bindFromRequest match {
-      case form:Form[Tuple] if form.hasErrors => Future { bad(form.errors.map {
-          error =>
-          error.key -> error.message
-        })
-      }
+      case form:Form[Tuple] if form.hasErrors => badFormAsJson(form)
       case form:Form[Tuple] =>
         success(form.get)
     }

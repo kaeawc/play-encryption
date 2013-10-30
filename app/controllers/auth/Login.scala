@@ -26,6 +26,8 @@ with CookieManagement {
 
   def getForm = WithUser { user => Future { Ok(views.html.auth.login(loginForm,user)) } }
 
+  val asdf:play.api.templates.Html = views.html.auth.login(loginForm)
+
   def submit = FormAsync(loginForm) {
     login:LoginCredentials =>
     
