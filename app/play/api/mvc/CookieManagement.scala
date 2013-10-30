@@ -65,6 +65,7 @@ trait CookieManagement extends Configuration {
   def getUserFromCookie(request:play.api.mvc.RequestHeader):Future[Option[User]] = {  
     
     try {
+
       val cookie = request.cookies.get(userCookieKey).get
       implicit val salt:Array[Byte] = appSalt
       val session = Crypto.decryptAES(cookie.value)

@@ -39,14 +39,16 @@ trait Authentication extends Monitoring {
   /**
    * If request has authenticated user state do action A, otherwise do action B
    */
-  def IfWithUser[A](
+  def IfWithUser(
     a: User => Future[SimpleResult],
-    b: Future[SimpleResult]
-  )(implicit request:Request[A]):Future[SimpleResult] =
-    userVisit[A] flatMap {
+    b: Future[SimpleResult] = { Future { Unauthorized(views.html.error.denied()) } }
+  ) = Action.async {
+    implicit request:Request[AnyContent] =>
+    userVisit[AnyContent] flatMap {
       case Some(user:User) => a(user)
       case _               => b
     }
+  }
 
   /**
    * If request has authenticated user state do action A, otherwise do action B

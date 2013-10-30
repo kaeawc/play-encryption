@@ -27,6 +27,8 @@ extends ((
   Long
 ) => UserSession)
 with crypto.Salt {
+  
+  val saltByteSize:Int = 255
 
   implicit val r = Json.reads[UserSession]
   implicit val w = Json.writes[UserSession]
@@ -62,7 +64,7 @@ with crypto.Salt {
       ).as(tokens.singleOpt) match {
         case Some(session:UserSession) => {
 
-          // Authenticated User
+          // Logger.info("Authenticated User")
           
           invalidate(session)
           Some(session)
