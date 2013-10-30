@@ -76,11 +76,9 @@ package object auth extends Specification {
 
     val data = Json.obj("email" -> email, "password" -> password, "retypedPassword" -> retypedPassword)
 
-    val response = route(header,data).get
+    implicit val response = route(header,data).get
 
-    status(response) must equalTo(201)
-    contentType(response) must beSome("text/plain")
-    contentAsString(response) mustEqual "User Created"
+    mustRedirectTo("/home")
 
     User.getByEmail(email) map {
       case Some(user:User) => {
