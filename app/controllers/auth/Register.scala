@@ -14,7 +14,8 @@ import models._
 object Register
 extends Controller
 with Private
-with FormBinding {
+with FormBinding
+with CookieManagement {
 
   val registerForm = Form[Registration](
     mapping(
@@ -35,11 +36,16 @@ with FormBinding {
   def submit = FormAsync(registerForm) {
     registration:Registration =>
 
-    User.create(registration) map {
+    User.create(registration) flatMap {
       case Some(user:User) =>
-        Created(Json.toJson(user))
+        createUserCookie(user) map {
+          case Some(cookie:Cookie) =>
+            Redirect(controllers.routes.Dashboard.home).withCookies(cookie)
+          case _ =>
+            InternalServerError(Json.obj("reason" -> "We could not create a secure persistant cookie for you."))
+        }
       case _ =>
-        NotFound
+        Future { NotFound }
     }
   }
 
