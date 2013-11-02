@@ -9,6 +9,18 @@ trait Public extends Authentication {
   /**
    * Action checks for authenticated user state
    */
+  def OnlyPublic(f: SimpleResult) =
+    Action.async { implicit request => IfLoggedIn[AnyContent]({ Future { Redirect("/") } }, Future { f } ) }
+
+  /**
+   * Action checks for authenticated user state
+   */
+  def OnlyPublic[A](bp: BodyParser[A])(f: SimpleResult) =
+    Action.async(bp) { implicit request => IfLoggedIn[A]({ Future { Redirect("/") } }, Future { f }) }
+
+  /**
+   * Action checks for authenticated user state
+   */
   def OnlyPublic(f: Future[SimpleResult]) =
     Action.async { implicit request => IfLoggedIn[AnyContent]({ Future { Redirect("/") } }, f) }
 
