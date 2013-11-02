@@ -17,6 +17,6 @@ with Private
 with Configuration {
 
   def submit = LoggedIn {
-    Future { Ok(views.html.landing()).discardingCookies(DiscardingCookie(userCookieKey)) }
+    Ok(views.html.landing()).discardingCookies(DiscardingCookie(userCookieKey))
   }
 }

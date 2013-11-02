@@ -7,6 +7,6 @@ import ExecutionContext.Implicits.global
 
 object Dashboard extends Controller with Private {
 
-  def home = IfWithUser { user => Future { Ok(views.html.home(Some(user))) } }
+  def home = UserAction { user => Future { Ok(views.html.home(Some(user))) } }
 
 }

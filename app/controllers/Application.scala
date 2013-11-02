@@ -9,7 +9,7 @@ object Application
 extends Controller
 with Private {
 
-  def landing = WithUser { user => Future { Ok(views.html.landing(user)) } }
+  def landing = VisitAction { user => Future { Ok(views.html.landing(user)) } }
 
-  def about   = WithUser { user => Future { Ok(views.html.about(user)) } }
+  def about   = VisitAction { user => Future { Ok(views.html.about(user)) } }
 }

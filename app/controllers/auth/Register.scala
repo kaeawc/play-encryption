@@ -13,6 +13,7 @@ import models._
 
 object Register
 extends Controller
+with Public
 with Private
 with FormBinding
 with CookieManagement {
@@ -31,21 +32,29 @@ with CookieManagement {
     )
   )
 
-  def getForm = WithUser { user => Future { Ok(views.html.auth.register(registerForm,user)) } }
+  def getForm = VisitAction { implicit user => Future { Ok(template(registerForm)) } }
 
-  def submit = FormAsync(registerForm) {
-    registration:Registration =>
+  def template(form:Form[Registration])(implicit user:Option[User]) = views.html.auth.register(form,user)
 
-    User.create(registration) flatMap {
-      case Some(user:User) =>
-        createUserCookie(user) map {
-          case Some(cookie:Cookie) =>
-            Redirect(controllers.routes.Dashboard.home).withCookies(cookie)
-          case _ =>
-            InternalServerError(Json.obj("reason" -> "We could not create a secure persistant cookie for you."))
-        }
-      case _ =>
-        Future { NotFound }
+  def submit = PublicUserAction {
+
+    implicit request =>
+    implicit user =>
+
+    BindUserAsync(registerForm,template) {
+      registration:Registration =>
+
+      User.create(registration) flatMap {
+        case Some(user:User) =>
+          createUserCookie(user) map {
+            case Some(cookie:Cookie) =>
+              Redirect(controllers.routes.Dashboard.home).withCookies(cookie)
+            case _ =>
+              InternalServerError(Json.obj("reason" -> "We could not create a secure persistant cookie for you."))
+          }
+        case _ =>
+          Future { NotFound }
+      }
     }
   }
 

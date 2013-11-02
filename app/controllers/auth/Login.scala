@@ -14,6 +14,7 @@ import models._
 object Login
 extends Controller
 with FormBinding
+with Public
 with Private
 with CookieManagement {
 
@@ -24,11 +25,11 @@ with CookieManagement {
     )(LoginCredentials.apply)(LoginCredentials.unapply)
   )
 
-  def getForm = WithUser { user => Future { Ok(views.html.auth.login(loginForm,user)) } }
+  def getForm = OnlyPublic { Ok(views.html.auth.login(loginForm,None)) }
 
-  val asdf:play.api.templates.Html = views.html.auth.login(loginForm)
+  def template(form:Form[LoginCredentials]) = views.html.auth.login(form)
 
-  def submit = FormAsync(loginForm) {
+  def submit = FormAsync(loginForm,template) {
     login:LoginCredentials =>
 
     User.authenticate(login) flatMap {
