@@ -1,0 +1,7 @@
+@(errors:Seq[FormError])
+
+@{errors.map {
+  case err if(err.message == "error.email") => "Empty or invalid email format"
+  case err if(err.message == "error.minLength") => "Too short (min length is X characters)"
+  case _ => "Unknown Validation Error"
+}}

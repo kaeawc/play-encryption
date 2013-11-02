@@ -1,0 +1,9 @@
+@(name:String, value:Option[String], errors:Seq[FormError])
+<div>
+  <input
+    type="text"
+    placeholder="email@@domain" 
+    name="@name" 
+    value="@value" />
+  <span class="error">@error.textField(errors)</span>
+</div>

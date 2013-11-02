@@ -5,9 +5,9 @@
   <div class="container">
 
     @helper.form(action = controllers.auth.routes.Register.submit()) {
-      @helper.inputText(registration("email"))
-      @helper.inputText(registration("password"))
-      @helper.inputText(registration("retypedPassword"))
+      @form.email("email",registration("email").value,registration.errors("email"))
+      @form.password("password",registration.errors("password"))
+      @form.password("retypedPassword",registration.errors("retypedPassword"))
       <input type="submit" value="Submit" />
     }
 

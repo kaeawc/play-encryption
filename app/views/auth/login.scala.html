@@ -5,8 +5,8 @@
   <div class="container">
 
     @helper.form(action = controllers.auth.routes.Login.submit()) {
-      <input type="text" placeholder="email@@domain" name="email" value="@login("email").value" />
-      <input type="password" placeholder="******" name="password" value="@login("password").value" />
+      @form.email("email",login("email").value,login.errors("email"))
+      @form.password("password",login.errors("password"))
       <input type="submit" value="Submit" />
     }
 
