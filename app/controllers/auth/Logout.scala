@@ -16,7 +16,7 @@ extends Controller
 with Private
 with Configuration {
 
-  def submit = LoggedIn {
+  def submit = LoggedInPage {
     Ok(views.html.landing()).discardingCookies(DiscardingCookie(userCookieKey))
   }
 }
