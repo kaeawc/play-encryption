@@ -37,3 +37,5 @@ CREATE TABLE visit (
 
 DROP TABLE user;
 DROP TABLE visit;
+DROP TABLE login_attempt;
+DROP TABLE user_session;
