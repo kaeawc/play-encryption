@@ -25,22 +25,14 @@ trait CookieManagement extends Configuration {
   def createUserCookie(user:User):Future[Option[Cookie]] = {
     val expires = Option(31536000)
 
-    UserSession.nextSeries(user.id,true) flatMap {
-      case Some(series:Long) => {
-        UserSession.create(user,series) map {
-          case Some(session:UserSession) => {
-            val value = Crypto.encryptAES(Json.toJson(session).toString)
-            Some(Cookie(userCookieKey, value, expires, "/", None, sslEnabled))
-          }
-          case _ => {
-            Logger.error("Couldn't create a cookie for this user.")
-            None
-          }
-        }
+    UserSession.create(user.id) map {
+      case Some(session:UserSession) => {
+        val value = Crypto.encryptAES(Json.toJson(session).toString)
+        Some(Cookie(userCookieKey, value, expires, "/", None, sslEnabled))
       }
       case _ => {
-        Logger.error("Couldn't even determine next series number for this user.")
-        Future { None }
+        Logger.error("Couldn't create a cookie for this user.")
+        None
       }
     }
   }
