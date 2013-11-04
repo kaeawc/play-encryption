@@ -16,15 +16,13 @@ import ExecutionContext.Implicits.global
 
 case class UserSession(
   user     : Long,
-  token    : String,
-  series   : Long
+  token    : String
 )
 
 object UserSession
 extends ((
   Long,
-  String,
-  Long
+  String
 ) => UserSession)
 with crypto.Salt {
   
@@ -35,87 +33,90 @@ with crypto.Salt {
 
   val tokens =
     long("user") ~
-    str("token") ~
-    long("series") map {
-      case          user~token~series =>
-        UserSession(user,token,series)
+    str("token") map {
+      case          user~token =>
+        UserSession(user,token)
     }
 
-  def parse(json:String) = Future {
+  def parse(json:String) = {
 
     val session = Json.fromJson(Json.parse(json)).get
+
+    Logger.info("Trying to parse a user session.")
+
+    Future {
+      DB.withConnection { implicit connection =>
+        SQL(
+          """
+            SELECT
+              us.user,
+              us.token
+            FROM user_session us
+            WHERE us.user = {user}
+              AND us.token = {token};
+          """
+        ).on(
+          'user -> session.user,
+          'token -> session.token
+        ).as(tokens.singleOpt)
+      }
+    } flatMap {
+      case Some(session:UserSession) => invalidate(session)
+      case _ => {
+        Logger.warn("User token not found in database")
+
+        //TODO: finish implementing token series authentication to discover and warn users of credential thefts
+        
+        Future { None }
+      }
+    }
+  }
+
+  def invalidate(session:UserSession):Future[Option[UserSession]] = Future { 
+
+    Logger.info("Invalidating an old user session")
 
     DB.withConnection { implicit connection =>
       SQL(
         """
-          SELECT
-            a.user,
-            a.token,
-            a.series
-          FROM user_session a
-          WHERE user = {user}
-            AND token = {token}
-            AND series = {series};
+          DELETE
+          FROM user_session us
+          WHERE us.user = {user}
+            AND us.token = {token};
         """
       ).on(
-        'user -> session.user,
-        'token -> session.token,
-        'series -> session.series
-      ).as(tokens.singleOpt) match {
-        case Some(session:UserSession) => {
+        'user  -> session.user,
+        'token -> session.token
+      ).executeUpdate()
+    }
+  } flatMap {
+    case rows:Int if rows > 1 => {
+      Logger.info("Deleted more than one record.  Why wasn't the user + token combination unique?")
 
-          // Logger.info("Authenticated User")
-          
-          invalidate(session)
-          Some(session)
-        }
-        case _ => {
-          Logger.warn("User token not found in database")
+      Future { None }
+    }
+    case rows:Int if rows < 1 => {
+      Logger.info("Deleted no records.  Could the record have already been deleted?")
 
-          //TODO: finish implementing token series authentication to discover and warn users of credential thefts
-          
-          None
-        }
-      }
+      Future { None }
+    }
+    case 1 => {
+      Logger.info("Invalided user token.")
+      
+      create(session.user)
+
+    }
+    case _ => {
+      Logger.info("Unknown error")
+
+      Future { None }
+
     }
   }
 
-  def invalidate(session:UserSession):Future[Option[UserSession]] = Future { None }
+  def create(user:Long):Future[Option[UserSession]] = Future {
 
-  def nextSeries(user:Long,isNew:Boolean):Future[Option[Long]] = Future {
-    DB.withConnection { implicit connection =>
-      val result = SQL(
-        """
-          SELECT
-            CASE 
-              WHEN MAX(a.series) IS NULL
-              THEN 0
-              ELSE MAX(a.series)
-            END last_series
-          FROM user_session a
-          WHERE user = 1;
-        """
-      ).on(
-        'user -> user
-      ).apply()
-
-      try {
-        val lastSeries = result.head[Long]("last_series")
-
-        if (isNew)
-          Some(lastSeries + 1)
-        else
-          Some(lastSeries)
-      } catch {
-        case e:Exception => {
-          Logger.error("Could not determine the next series number for this user's session.")
-          None
-        }
-      }
-    }
-  }
-
-  def create(user:User,series:Long):Future[Option[UserSession]] = Future {
+    Logger.info("Creating a new user session")
 
     val token   = bytes2hex(createSalt())
     val created = new Date()
@@ -126,27 +127,25 @@ with crypto.Salt {
           INSERT INTO user_session (
             user,
             token,
-            series,
             created
           ) VALUES (
             {user},
             {token},
-            {series},
             {created}
           );
         """
       ).on(
-        'user     -> user.id,
+        'user     -> user,
         'token    -> token,
-        'series   -> series,
         'created  -> created
       ).executeInsert()
     } match {
       case Some(id:Long) => 
+
+        Logger.info("Created user session")
         Some(UserSession(
-          user.id,
-          token,
-          series
+          user,
+          token
         ))
       case _ => None
     }

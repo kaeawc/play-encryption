@@ -56,12 +56,12 @@ with Authentication[User] {
       SQL(
         """
           SELECT
-            a.id,
-            a.email,
-            a.password,
-            a.salt,
-            a.created
-          FROM user a
+            u.id,
+            u.email,
+            u.password,
+            u.salt,
+            u.created
+          FROM user u
           WHERE id = {id};
         """
       ).on(
@@ -75,12 +75,12 @@ with Authentication[User] {
       SQL(
         """
           SELECT
-            a.id,
-            a.email,
-            a.password,
-            a.salt,
-            a.created
-          FROM user a
+            u.id,
+            u.email,
+            u.password,
+            u.salt,
+            u.created
+          FROM user u
           WHERE email = {email};
         """
       ).on(
