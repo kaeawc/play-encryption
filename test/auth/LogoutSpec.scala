@@ -25,9 +25,9 @@ class LogoutSpec extends Specification {
 
       val request = FakeRequest(GET, "/logout")
 
-      val response = route(request).get
+      implicit val response = route(request).get
 
-      status(response) must equalTo(401)
+      mustRedirectTo("/")
     }
 
     "wipe all cookies if an authorized user." in new WithApp {
@@ -36,9 +36,9 @@ class LogoutSpec extends Specification {
 
       val request = FakeRequest(GET, "/logout")
 
-      val response = route(request).get
+      implicit val response = route(request).get
 
-      status(response) must equalTo(401)
+      mustRedirectTo("/")
     }
   }
 }
