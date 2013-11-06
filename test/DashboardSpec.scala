@@ -32,7 +32,54 @@ class DashboardSpec extends Specification {
 
       val response = route(request).get
 
-      status(response) must equalTo(OK)
+      status(response) mustEqual OK
+    }
+
+    "authorized cookie should only be valid once" in new WithApp {
+
+      val cookie = authorizedCookie(Email.random(),Random.string(10))
+
+      val request = FakeRequest(GET, "/home")
+        .withCookies(cookie)
+
+      val response = route(request).get
+
+      status(response) mustEqual OK
+
+      val badRequest = FakeRequest(GET, "/home")
+        .withCookies(cookie)
+
+      val badResponse = route(badRequest).get
+
+      status(badResponse) mustEqual 401
+    }
+
+    "returned cookie should allow session to persist" in new WithApp {
+
+      val request = FakeRequest(GET, "/home")
+        .withCookies(authorizedCookie(Email.random(),Random.string(10)))
+
+      val response = route(request).get
+
+      status(response) mustEqual OK
+
+      val cookie = getUserCookie(response)
+
+      val nextRequest = FakeRequest(GET, "/home")
+        .withCookies(cookie.get)
+
+      val nextResponse = route(nextRequest).get
+
+      status(nextResponse) mustEqual OK
+
+      val cookieAgain = getUserCookie(nextResponse)
+
+      val finalRequest = FakeRequest(GET, "/home")
+        .withCookies(cookieAgain.get)
+
+      val finalResponse = route(finalRequest).get
+
+      status(finalResponse) mustEqual OK
     }
   }
 }

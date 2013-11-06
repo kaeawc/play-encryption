@@ -22,15 +22,27 @@ trait CookieManagement extends Configuration {
   /**
    * creates a Cookie instance with an encrypted value
    */
-  def createUserCookie(user:User):Future[Option[Cookie]] = {
-    val expires = Option(31536000)
-
-    UserSession.create(user.id) map {
-      case Some(session:UserSession) => {
-        val value = Crypto.encryptAES(Json.toJson(session).toString)
-        Some(Cookie(userCookieKey, value, expires, "/", None, sslEnabled))
-      }
+  def createUserCookie(user:Long):Future[Option[Cookie]] = {
+    UserSession.create(user) map {
+      case Some(session:UserSession) => createCookieFromSession(session)
       case _ => {
+        Logger.error("Couldn't create a User Session.")
+        None
+      }
+    }
+  }
+
+  /**
+   * creates a Cookie instance with an encrypted value
+   */
+  def createCookieFromSession(session:UserSession):Option[Cookie] = {
+
+    try {
+      val expires = Option(31536000)
+      val value = Crypto.encryptAES(Json.toJson(session).toString)
+      Some(Cookie(userCookieKey, value, expires, "/", None, sslEnabled))
+    } catch {
+      case e:Exception => {
         Logger.error("Couldn't create a cookie for this user.")
         None
       }
@@ -54,18 +66,17 @@ trait CookieManagement extends Configuration {
   /**
    * attempts to decode the current user's cookie
    */
-  def getUserFromCookie(request:play.api.mvc.RequestHeader):Future[Option[User]] = {  
+  def getUserFromCookie(request:play.api.mvc.RequestHeader):Future[Option[UserSession]] = {  
     
     try {
 
       val cookie = request.cookies.get(userCookieKey).get
+
       implicit val salt:Array[Byte] = appSalt
+      
       val session = Crypto.decryptAES(cookie.value)
 
-      UserSession.parse(session) flatMap {
-        case Some(token:UserSession) => User.getById(token.user)
-        case _ => Future { None }
-      }
+      UserSession.parse(session)
     } catch {
       case e:Exception => Future { None }
     }

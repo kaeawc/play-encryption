@@ -29,23 +29,24 @@ with CookieManagement {
 
   def template(form:Form[LoginCredentials]) = views.html.auth.login(form)
 
-  def submit = FormAsync(loginForm,template) {
-    login:LoginCredentials =>
+  def submit = OnlyPublicAction {
 
-    User.authenticate(login) flatMap {
-      case Some(user:User) => {
+    implicit request =>
 
-        Logger.info("User authenticated")
+    BindAsync(loginForm,template) {
+      login:LoginCredentials =>
 
-        createUserCookie(user) map {
-          case Some(cookie:Cookie) =>
-            Redirect(controllers.routes.Dashboard.home).withCookies(cookie)
-          case _ =>
-            InternalServerError(Json.obj("reason" -> "We could not create a secure persistant cookie for you."))
-        }
+      User.authenticate(login) flatMap {
+        case Some(user:User) =>
+          createUserCookie(user.id) map {
+            case Some(cookie:Cookie) =>
+              Redirect(controllers.routes.Dashboard.home).discardingCookies(DiscardingCookie(userCookieKey)).withCookies(cookie)
+            case _ =>
+              InternalServerError(Json.obj("reason" -> "We could not create a secure persistant cookie for you."))
+          }
+        case _ =>
+          Future { Unauthorized(Json.obj("reason" -> "Your credentials are invalid.")) }
       }
-      case _ =>
-        Future { Unauthorized(Json.obj("reason" -> "Your credentials are invalid.")) }
     }
   }
 }

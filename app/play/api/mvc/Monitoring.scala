@@ -51,12 +51,7 @@ trait Monitoring {
    */
   implicit def userVisit[A](implicit request: Request[A]):Future[Option[User]] = {
     visit[A] flatMap {
-      case Some(visit:Visit) => {
-        visit.user match {
-          case Some(id:Long) => User.getById(id)
-          case _ => noFuture
-        }
-      }
+      case Some(session:UserSession) => User.getById(session.user)
       case _ => noFuture
     }
   }
@@ -73,17 +68,17 @@ trait Monitoring {
   /**
    * Gets a client visit visit
    */
-  implicit def getVisit(implicit request: Request[AnyContent]):Future[Visit] =
+  implicit def getSession(implicit request: Request[AnyContent]):Future[UserSession] =
     visit[AnyContent] map {
-      case Some(visit:Visit) => visit
-      case _ => throw new Exception("Failed to get current visit.")
+      case Some(session:UserSession) => session
+      case _ => throw new Exception("Failed to get current user session.")
     }
 
   /**
    * Attempts to parse the request implicitly for a client UserView
    */
-  implicit def visit[A](implicit request: Request[A]):Future[Option[Visit]] =
-    Visit.create(request)
+  implicit def visit[A](implicit request: Request[A]):Future[Option[UserSession]] =
+    Visit.log(request)
 
   /**
    * Whether or not the request has an authenticated user, perform the action.

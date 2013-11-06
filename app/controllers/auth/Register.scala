@@ -34,21 +34,20 @@ with CookieManagement {
 
   def getForm = VisitAction { implicit user => Future { Ok(template(registerForm)) } }
 
-  def template(form:Form[Registration])(implicit user:Option[User]) = views.html.auth.register(form,user)
+  def template(form:Form[Registration]) = views.html.auth.register(form,None)
 
-  def submit = PublicUserAction {
+  def submit = OnlyPublicAction {
 
     implicit request =>
-    implicit user =>
 
-    BindUserAsync(registerForm,template) {
+    BindAsync(registerForm,template) {
       registration:Registration =>
 
       User.create(registration) flatMap {
         case Some(user:User) =>
-          createUserCookie(user) map {
+          createUserCookie(user.id) map {
             case Some(cookie:Cookie) =>
-              Redirect(controllers.routes.Dashboard.home).withCookies(cookie)
+              Redirect(controllers.routes.Dashboard.home).discardingCookies(DiscardingCookie(userCookieKey)).withCookies(cookie)
             case _ =>
               InternalServerError(Json.obj("reason" -> "We could not create a secure persistant cookie for you."))
           }

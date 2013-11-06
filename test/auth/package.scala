@@ -50,7 +50,7 @@ package object auth extends Specification {
 
     val session = Crypto.decryptAES(cookie.get.value)
 
-    UserSession.parse(session) flatMap {
+    UserSession.fromJson(session) match {
       case Some(token:UserSession) => User.getById(token.user)
       case _ => Future { None }
     }
@@ -90,15 +90,13 @@ package object auth extends Specification {
       }
       case _ => failure("Could not parse the response as a User object")
     }
+
+    response
   }
 
   def validLogin(email:String,password:String) = {
     
-      createUser(email, password, password)
-      
-      implicit val response = attemptLogin(email, password)
-
-      mustRedirectTo("/home")
+      implicit val response = createUser(email, password, password)
 
       mustBeAuthenticated
 

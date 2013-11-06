@@ -38,11 +38,18 @@ with crypto.Salt {
         UserSession(user,token)
     }
 
+  def fromJson(json:String) = {
+
+    try {
+      Some(Json.fromJson(Json.parse(json)).get)
+    } catch {
+      case e:Exception => None
+    }
+  }
+
   def parse(json:String) = {
 
-    val session = Json.fromJson(Json.parse(json)).get
-
-    Logger.info("Trying to parse a user session.")
+    val session = fromJson(json).get
 
     Future {
       DB.withConnection { implicit connection =>
@@ -63,7 +70,7 @@ with crypto.Salt {
     } flatMap {
       case Some(session:UserSession) => invalidate(session)
       case _ => {
-        Logger.warn("User token not found in database")
+        Logger.warn("USERSESSION - User token not found in database")
 
         //TODO: finish implementing token series authentication to discover and warn users of credential thefts
         
@@ -73,8 +80,6 @@ with crypto.Salt {
   }
 
   def invalidate(session:UserSession):Future[Option[UserSession]] = Future { 
-
-    Logger.info("Invalidating an old user session")
 
     DB.withConnection { implicit connection =>
       SQL(
@@ -91,23 +96,18 @@ with crypto.Salt {
     }
   } flatMap {
     case rows:Int if rows > 1 => {
-      Logger.info("Deleted more than one record.  Why wasn't the user + token combination unique?")
+      Logger.error("USERSESSION - Deleted more than one record.  Why wasn't the user + token combination unique?")
 
       Future { None }
     }
     case rows:Int if rows < 1 => {
-      Logger.info("Deleted no records.  Could the record have already been deleted?")
+      Logger.error("USERSESSION - Deleted no records.  Could the record have already been deleted?")
 
       Future { None }
     }
-    case 1 => {
-      Logger.info("Invalided user token.")
-      
-      create(session.user)
-
-    }
+    case 1 => create(session.user)
     case _ => {
-      Logger.info("Unknown error")
+      Logger.error("USERSESSION - Unknown error")
 
       Future { None }
 
@@ -115,8 +115,6 @@ with crypto.Salt {
   }
 
   def create(user:Long):Future[Option[UserSession]] = Future {
-
-    Logger.info("Creating a new user session")
 
     val token   = bytes2hex(createSalt())
     val created = new Date()
@@ -140,14 +138,17 @@ with crypto.Salt {
         'created  -> created
       ).executeInsert()
     } match {
-      case Some(id:Long) => 
-
-        Logger.info("Created user session")
+      case Some(id:Long) =>
         Some(UserSession(
           user,
           token
         ))
-      case _ => None
+      case _ => {
+
+        Logger.error("USERSESSION - Failed to create session: " + token.substring(0,10))
+
+        None
+      }
     }
   }
 }

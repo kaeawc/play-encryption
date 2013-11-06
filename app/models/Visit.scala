@@ -44,7 +44,7 @@ object Visit extends ((
       Visit(id,uri,userAgent,user,created)
   }
 
-  def create(request:RequestHeader):Future[Option[Visit]] = {
+  def log(request:RequestHeader):Future[Option[UserSession]] = {
 
     val created = new Date()
 
@@ -52,12 +52,10 @@ object Visit extends ((
 
     val userAgent = request.headers.get("User-Agent")
 
-    
-
     getUserFromCookie(request) map {
-      user =>
-      val userId = user match {
-        case Some(user:User) => Some(user.id)
+      session =>
+      val userId = session match {
+        case Some(session:UserSession) => Some(session.user)
         case _ => None
       }
 
@@ -83,13 +81,11 @@ object Visit extends ((
           'created   -> created
         ).executeInsert()
 
-        id match {
-          case Some(id:Long) => 
-            Some(Visit(id,uri,userAgent,userId,created))
-          case _ =>
-            None
-        }
+        if (id.isEmpty)
+          Logger.error("Failed to log visit")
       }
+      
+      session
     }
   }
 }

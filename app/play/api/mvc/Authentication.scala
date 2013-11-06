@@ -1,6 +1,6 @@
 package play.api.mvc
 
-import models.User
+import models.{User,UserSession}
 
 import play.api.Logger
 
@@ -9,7 +9,9 @@ import scala.concurrent.{Future,ExecutionContext}
 import ExecutionContext.Implicits.global
 import play.api.templates.Html
 
-trait Authentication extends Monitoring {
+trait Authentication
+extends Monitoring
+with CookieManagement {
 
   /**
    * If request has authenticated user state do action A, otherwise do action B
@@ -30,9 +32,27 @@ trait Authentication extends Monitoring {
     a: Option[User] => Future[SimpleResult]
   ) = Action.async {
     implicit request:Request[AnyContent] =>
-    userVisit[AnyContent] flatMap {
-      case Some(user:User) => a(Some(user))
-      case _               => a(None)
+
+    visit[AnyContent] flatMap {
+      case Some(session:UserSession) => {
+
+        User.getById(session.user) flatMap {
+          case Some(user:User) => {
+
+            createCookieFromSession(session) match {
+              case Some(cookie:Cookie) => {
+
+                a(Some(user)) map {
+                  result => result.discardingCookies(DiscardingCookie(userCookieKey)).withCookies(cookie)
+                }
+              }
+              case _ => a(Some(user))
+            }
+          }
+          case _ => a(None)
+        }
+      }
+      case _ => a(None)
     }
   }
 
@@ -52,14 +72,47 @@ trait Authentication extends Monitoring {
   /**
    * If request has authenticated user state do action A, otherwise do action B
    */
+  def OnlyPublicAction(
+    a: Request[AnyContent] => Future[SimpleResult],
+    b: Future[SimpleResult] = { Future { Unauthorized(views.html.error.denied()) } }
+  ) = Action.async {
+    implicit request:Request[AnyContent] =>
+    userVisit[AnyContent] flatMap {
+      case None => a(request)
+      case _    => b
+    }
+  }
+
+  /**
+   * If request has authenticated user state do action A, otherwise do action B
+   */
   def UserAction(
     a: User => Future[SimpleResult],
     b: Future[SimpleResult] = { Future { Unauthorized(views.html.error.denied()) } }
   ) = Action.async {
     implicit request:Request[AnyContent] =>
-    userVisit[AnyContent] flatMap {
-      case Some(user:User) => a(user)
-      case _               => b
+
+
+    visit[AnyContent] flatMap {
+      case Some(session:UserSession) => {
+
+        User.getById(session.user) flatMap {
+          case Some(user:User) => {
+
+            createCookieFromSession(session) match {
+              case Some(cookie:Cookie) => {
+
+                a(user) map {
+                  result => result.discardingCookies(DiscardingCookie(userCookieKey)).withCookies(cookie)
+                }
+              }
+              case _ => a(user)
+            }
+          }
+          case _ => b
+        }
+      }
+      case _ => b
     }
   }
 
