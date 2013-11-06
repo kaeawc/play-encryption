@@ -13,7 +13,6 @@ import models._
 
 object Register
 extends Controller
-with Public
 with Private
 with FormBinding
 with CookieManagement {

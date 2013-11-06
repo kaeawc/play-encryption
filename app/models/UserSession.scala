@@ -85,9 +85,9 @@ with crypto.Salt {
       SQL(
         """
           DELETE
-          FROM user_session us
-          WHERE us.user = {user}
-            AND us.token = {token};
+          FROM user_session
+          WHERE user = {user}
+            AND token = {token};
         """
       ).on(
         'user  -> session.user,
