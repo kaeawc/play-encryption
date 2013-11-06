@@ -46,7 +46,7 @@ with CookieManagement {
         case Some(user:User) =>
           createUserCookie(user.id) map {
             case Some(cookie:Cookie) =>
-              Redirect(controllers.routes.Dashboard.home).discardingCookies(DiscardingCookie(userCookieKey)).withCookies(cookie)
+              replaceCookie(Redirect(controllers.routes.Dashboard.home),cookie)
             case _ =>
               InternalServerError(Json.obj("reason" -> "We could not create a secure persistant cookie for you."))
           }
