@@ -16,13 +16,12 @@ case class LoginAttempt(
   id       : Long,
   user     : Long,
   token    : String,
-  series   : Long,
   created  : Date
 )
 
 object LoginAttempt {
 
-  def create(user:Long,token:String,series:Long):Future[Option[LoginAttempt]] = {
+  def create(user:Long,token:String):Future[Option[LoginAttempt]] = {
 
     val created = new Date()
 
@@ -30,22 +29,19 @@ object LoginAttempt {
       DB.withConnection { implicit connection =>
         SQL(
           """
-            INSERT INTO user_session (
+            INSERT INTO login_attempt (
               user,
               token,
-              series,
               created
             ) VALUES (
               {user},
               {token},
-              {series},
               {created}
             );
           """
         ).on(
           'user     -> user,
           'token    -> token,
-          'series   -> series,
           'created  -> created
         ).executeInsert()
       } match {
@@ -54,7 +50,6 @@ object LoginAttempt {
             id,
             user,
             token,
-            series,
             created
           ))
         case _ => None
