@@ -11,6 +11,19 @@ import ExecutionContext.Implicits.global
 
 trait CookieManagement extends Configuration {
 
+  def removeCookie(future:Future[SimpleResult]):Future[SimpleResult] =
+    future map { result => removeCookie(result) }
+
+  def replaceCookie(future:Future[SimpleResult],cookie:Cookie):Future[SimpleResult] = {
+    future map { result => replaceCookie(result,cookie) }
+  }
+
+  def removeCookie(result:SimpleResult):SimpleResult =
+    result.discardingCookies(DiscardingCookie(userCookieKey))
+
+  def replaceCookie(result:SimpleResult,cookie:Cookie):SimpleResult =
+    result.discardingCookies(DiscardingCookie(userCookieKey)).withCookies(cookie)
+
   /**
    * creates a Cookie instance with an encrypted value
    */

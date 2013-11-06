@@ -110,20 +110,6 @@ with CookieManagement {
     }
   }
 
-  def removeCookie(action:Future[SimpleResult]):Future[SimpleResult] = {
-    action map {
-      result =>
-      result.discardingCookies(DiscardingCookie(userCookieKey))
-    }
-  }
-
-  def replaceCookie(action:Future[SimpleResult],cookie:Cookie):Future[SimpleResult] = {
-    action map {
-      result =>
-      result.discardingCookies(DiscardingCookie(userCookieKey)).withCookies(cookie)
-    }
-  }
-
   /**
    * If request has authenticated user state do action A, otherwise do action B
    */
