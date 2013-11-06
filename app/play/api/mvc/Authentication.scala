@@ -25,6 +25,23 @@ with CookieManagement {
       case _               => b
     }
 
+  def SessionAction(
+    a: Option[User] => Future[SimpleResult],
+    session:UserSession)(implicit request:Request[AnyContent]) = {
+    User.getById(session.user) flatMap {
+      case Some(user:User) => {
+
+        createCookieFromSession(session) match {
+          case Some(cookie:Cookie) =>
+            replaceCookie(a(Some(user)),cookie)
+          case _ =>
+            removeCookie(a(None))
+        }
+      }
+      case _ => removeCookie(a(None))
+    }
+  }
+
   /**
    * If request has authenticated user state do action A, otherwise do action B
    */
@@ -34,21 +51,7 @@ with CookieManagement {
     implicit request:Request[AnyContent] =>
 
     visit[AnyContent] flatMap {
-      case Some(session:UserSession) => {
-
-        User.getById(session.user) flatMap {
-          case Some(user:User) => {
-
-            createCookieFromSession(session) match {
-              case Some(cookie:Cookie) =>
-                replaceCookie(a(Some(user)),cookie)
-              case _ =>
-                removeCookie(a(None))
-            }
-          }
-          case _ => removeCookie(a(None))
-        }
-      }
+      case Some(session:UserSession) => SessionAction(a,session)
       case _ => removeCookie(a(None))
     }
   }
@@ -80,33 +83,36 @@ with CookieManagement {
     }
   }
 
+  def UserAction(
+    a: User => Future[SimpleResult],
+    b: Future[SimpleResult],
+    session:UserSession)(implicit request:Request[AnyContent]):Future[SimpleResult] = {
+    User.getById(session.user) flatMap {
+      case Some(user:User) =>
+        createCookieFromSession(session) match {
+          case Some(cookie:Cookie) =>
+            replaceCookie(a(user),cookie)
+          case _ =>
+            removeCookie(b)
+      }
+      case _ =>
+        removeCookie(b)
+    }
+  }
+
   /**
    * If request has authenticated user state do action A, otherwise do action B
    */
-  def UserAction(
+  def OnlyUserAction(
     a: User => Future[SimpleResult],
     b: Future[SimpleResult] = { Future { Unauthorized(views.html.error.denied()) } }
   ) = Action.async {
     implicit request:Request[AnyContent] =>
-
-
     visit[AnyContent] flatMap {
-      case Some(session:UserSession) => {
-
-        User.getById(session.user) flatMap {
-          case Some(user:User) => {
-
-            createCookieFromSession(session) match {
-              case Some(cookie:Cookie) =>
-                replaceCookie(a(user),cookie)
-              case _ =>
-                removeCookie(b)
-            }
-          }
-          case _ => removeCookie(b)
-        }
-      }
-      case _ => removeCookie(b)
+      case Some(session:UserSession) =>
+        UserAction(a,b,session)
+      case _ =>
+        removeCookie(b)
     }
   }
 
