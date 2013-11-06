@@ -84,9 +84,12 @@ with CookieManagement {
   }
 
   def UserAction(
-    a: User => Future[SimpleResult],
-    b: Future[SimpleResult],
-    session:UserSession)(implicit request:Request[AnyContent]):Future[SimpleResult] = {
+    a       : User => Future[SimpleResult],
+    b       : Future[SimpleResult],
+    session : UserSession
+  )(implicit
+    request : Request[AnyContent]
+  ):Future[SimpleResult] =
     User.getById(session.user) flatMap {
       case Some(user:User) =>
         createCookieFromSession(session) match {
@@ -98,7 +101,6 @@ with CookieManagement {
       case _ =>
         removeCookie(b)
     }
-  }
 
   /**
    * If request has authenticated user state do action A, otherwise do action B
