@@ -40,19 +40,16 @@ with CookieManagement {
           case Some(user:User) => {
 
             createCookieFromSession(session) match {
-              case Some(cookie:Cookie) => {
-
-                a(Some(user)) map {
-                  result => result.discardingCookies(DiscardingCookie(userCookieKey)).withCookies(cookie)
-                }
-              }
-              case _ => a(Some(user))
+              case Some(cookie:Cookie) =>
+                replaceCookie(a(Some(user)),cookie)
+              case _ =>
+                removeCookie(a(None))
             }
           }
-          case _ => a(None)
+          case _ => removeCookie(a(None))
         }
       }
-      case _ => a(None)
+      case _ => removeCookie(a(None))
     }
   }
 
@@ -100,19 +97,30 @@ with CookieManagement {
           case Some(user:User) => {
 
             createCookieFromSession(session) match {
-              case Some(cookie:Cookie) => {
-
-                a(user) map {
-                  result => result.discardingCookies(DiscardingCookie(userCookieKey)).withCookies(cookie)
-                }
-              }
-              case _ => a(user)
+              case Some(cookie:Cookie) =>
+                replaceCookie(a(user),cookie)
+              case _ =>
+                removeCookie(b)
             }
           }
-          case _ => b
+          case _ => removeCookie(b)
         }
       }
-      case _ => b
+      case _ => removeCookie(b)
+    }
+  }
+
+  def removeCookie(action:Future[SimpleResult]):Future[SimpleResult] = {
+    action map {
+      result =>
+      result.discardingCookies(DiscardingCookie(userCookieKey))
+    }
+  }
+
+  def replaceCookie(action:Future[SimpleResult],cookie:Cookie):Future[SimpleResult] = {
+    action map {
+      result =>
+      result.discardingCookies(DiscardingCookie(userCookieKey)).withCookies(cookie)
     }
   }
 
