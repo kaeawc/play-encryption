@@ -12,14 +12,15 @@ CREATE TABLE user (
 CREATE TABLE user_session (
   id        BIGINT       NOT NULL PRIMARY KEY AUTO_INCREMENT,
   user      BIGINT       NOT NULL,
-  token     VARCHAR(512) NOT NULL,
+  token     VARCHAR(510) NOT NULL,
+  salt      VARCHAR(510) NOT NULL,
   created   DATETIME     NOT NULL
 );
 
 CREATE TABLE login_attempt (
   id        BIGINT       NOT NULL PRIMARY KEY AUTO_INCREMENT,
   user      BIGINT       NOT NULL,
-  token     VARCHAR(512) NOT NULL,
+  token     VARCHAR(510) NOT NULL,
   created   DATETIME     NOT NULL
 );
 

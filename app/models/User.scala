@@ -31,10 +31,9 @@ extends ((
   String,
   Date
 ) => User)
-with Authentication[User] {
+with Authentication[User,LoginCredentials] {
 
-  implicit val r = Json.reads[User]
-  implicit val w = Json.writes[User]
+  implicit val jsonFormat = Json.format[User]
 
   def parse(json:String) = 
     Json.fromJson(Json.parse(json)).get

@@ -7,9 +7,9 @@ import java.security.SecureRandom
 
 import scala.concurrent.{Await, Future, ExecutionContext}
 
-trait Authentication[Model] extends crypto.PBKDF2 {
+trait Authentication[Model,Credentials] extends crypto.PBKDF2 {
 
-  def authenticate(credentials:LoginCredentials):Future[Option[Model]]
+  def authenticate(credentials:Credentials):Future[Option[Model]]
 
   def useSalt(plainText:String, salt:Array[Byte]):String = {
     hash(plainText, salt)

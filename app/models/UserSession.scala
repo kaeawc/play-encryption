@@ -15,27 +15,28 @@ import scala.concurrent.duration._
 import ExecutionContext.Implicits.global
 
 case class UserSession(
-  user     : Long,
-  token    : String
+  user  : Long,
+  token : String,
+  salt  : String
 )
 
 object UserSession
 extends ((
   Long,
+  String,
   String
 ) => UserSession)
-with crypto.Salt {
-  
-  val saltByteSize:Int = 255
+with Authentication[UserSession,UserSession] {
 
   implicit val r = Json.reads[UserSession]
   implicit val w = Json.writes[UserSession]
 
   val tokens =
     long("user") ~
-    str("token") map {
-      case          user~token =>
-        UserSession(user,token)
+    str("token") ~
+    str("salt") map {
+      case          user~token~salt =>
+        UserSession(user,token,salt)
     }
 
   def fromJson(json:String) = {
@@ -47,37 +48,26 @@ with crypto.Salt {
     }
   }
 
-  def parse(json:String) = {
-
-    val session = fromJson(json).get
-
-    Future {
-      DB.withConnection { implicit connection =>
-        SQL(
-          """
-            SELECT
-              us.user,
-              us.token
-            FROM user_session us
-            WHERE us.user = {user}
-              AND us.token = {token};
-          """
-        ).on(
-          'user -> session.user,
-          'token -> session.token
-        ).as(tokens.singleOpt)
-      }
-    } flatMap {
-      case Some(session:UserSession) => invalidate(session)
-      case _ => {
-        Logger.warn("USERSESSION - User token not found in database")
-
-        //TODO: finish implementing token series authentication to discover and warn users of credential thefts
-        
-        Future { None }
-      }
+  def getByUser(user:Long) = Future {
+    DB.withConnection { implicit connection =>
+      SQL(
+        """
+          SELECT
+            us.user,
+            us.token,
+            us.salt
+          FROM user_session us
+          WHERE us.user = {user}
+          ORDER BY created DESC
+          LIMIT 1;
+        """
+      ).on(
+        'user -> user
+      ).as(tokens.singleOpt)
     }
   }
+
+  def parse(json:String) = authenticate(fromJson(json).get)
 
   def invalidate(session:UserSession):Future[Option[UserSession]] = Future { 
 
@@ -116,8 +106,12 @@ with crypto.Salt {
 
   def create(user:Long):Future[Option[UserSession]] = Future {
 
-    val token   = bytes2hex(createSalt())
-    val created = new Date()
+    val token              = createSalt()
+    val salt               = createSalt()
+    val hashedToken        = useSalt(token,salt)
+    val created            = new Date()
+    val storedSalt:String  = salt
+    val cookieToken:String = token
 
     DB.withConnection { implicit connection =>
       SQL(
@@ -125,30 +119,60 @@ with crypto.Salt {
           INSERT INTO user_session (
             user,
             token,
+            salt,
             created
           ) VALUES (
             {user},
             {token},
+            {salt},
             {created}
           );
         """
       ).on(
         'user     -> user,
-        'token    -> token,
+        'token    -> hashedToken,
+        'salt     -> salt,
         'created  -> created
       ).executeInsert()
     } match {
       case Some(id:Long) =>
         Some(UserSession(
           user,
-          token
+          cookieToken,
+          storedSalt
         ))
       case _ => {
 
-        Logger.error("USERSESSION - Failed to create session: " + token.substring(0,10))
+        Logger.error("Failed to create session: " + token.substring(0,10))
 
         None
       }
     }
   }
+  
+  def authenticate(session:UserSession):Future[Option[UserSession]] =
+
+    getByUser(session.user) flatMap {
+      case Some(valid:UserSession) => {
+
+        val hashedToken = bytes2hex(useSalt(session.token,valid.salt))
+
+        if (valid.token == hashedToken)
+          invalidate(valid)
+        else {
+
+          Logger.warn("Login attempt made with invalid token - token hash does not match")
+
+          Future { None }
+        }
+      }
+      case _ => {
+
+        Logger.warn("Login attempt made with invalid token - could not find any valid tokens for this user")
+
+        //TODO: finish implementing token series authentication to discover and warn users of credential thefts
+        
+        Future { None }
+      }
+    }
 }

@@ -26,8 +26,11 @@ with CookieManagement {
     }
 
   def SessionAction(
-    a: Option[User] => Future[SimpleResult],
-    session:UserSession)(implicit request:Request[AnyContent]) = {
+    a       : Option[User] => Future[SimpleResult],
+    session : UserSession
+  )(implicit
+    request:Request[AnyContent]
+  ) = {
     User.getById(session.user) flatMap {
       case Some(user:User) => {
 

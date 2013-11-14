@@ -35,7 +35,7 @@ trait CookieManagement extends Configuration {
   /**
    * creates a Cookie instance with an encrypted value
    */
-  def createUserCookie(user:Long):Future[Option[Cookie]] = {
+  def createUserCookie(user:Long) = {
     UserSession.create(user) map {
       case Some(session:UserSession) => createCookieFromSession(session)
       case _ => {
